@@ -1,48 +1,72 @@
 import streamlit as st
+import requests
+import datetime
 
-'''
-# TaxiFareModel front
-'''
+# ---------------------
+# 🎨 Header & intro
+# ---------------------
+st.title("🚕 TaxiFareModel front")
+st.markdown("""
+This is a simple front-end interface to test your **TaxiFareModel API**.
+You can input the ride details below and retrieve the predicted fare.
+""")
 
-st.markdown('''
-Remember that there are several ways to output content into your web page...
+st.divider()
 
-Either as with the title by just creating a string (or an f-string). Or as with this paragraph using the `st.` functions
-''')
+st.markdown("""
+### 🕹️ Select ride parameters
+""")
 
-'''
-## Here we would like to add some controllers in order to ask the user to select the parameters of the ride
+# ---------------------
+# 🧭 User inputs
+# ---------------------
 
-1. Let's ask for:
-- date and time
-- pickup longitude
-- pickup latitude
-- dropoff longitude
-- dropoff latitude
-- passenger count
-'''
+# 1️⃣ Date & Time
+pickup_date = st.date_input("Pickup Date", datetime.date(2014, 7, 6))
+pickup_time = st.time_input("Pickup Time", datetime.time(19, 18, 0))
+pickup_datetime = f"{pickup_date} {pickup_time}"
 
-'''
-## Once we have these, let's call our API in order to retrieve a prediction
+# 2️⃣ Coordinates
+pickup_longitude = st.number_input("Pickup Longitude", value=-73.950655, format="%.6f")
+pickup_latitude = st.number_input("Pickup Latitude", value=40.783282, format="%.6f")
+dropoff_longitude = st.number_input("Dropoff Longitude", value=-73.984365, format="%.6f")
+dropoff_latitude = st.number_input("Dropoff Latitude", value=40.769802, format="%.6f")
 
-See ? No need to load a `model.joblib` file in this app, we do not even need to know anything about Data Science in order to retrieve a prediction...
+# 3️⃣ Passenger count
+passenger_count = st.number_input("Passenger Count", min_value=1, max_value=8, value=2)
 
-🤔 How could we call our API ? Off course... The `requests` package 💡
-'''
+st.divider()
 
-url = 'https://taxifare.lewagon.ai/predict'
+# ---------------------
+# ⚙️ API call section
+# ---------------------
 
-if url == 'https://taxifare.lewagon.ai/predict':
+st.markdown("### 🔮 Get fare prediction")
 
-    st.markdown('Maybe you want to use your own API for the prediction, not the one provided by Le Wagon...')
+url = st.text_input("Enter your API URL", value="https://taxifare.lewagon.ai/predict")
 
-'''
+if st.button("Predict fare"):
+    # Build the params dictionary
+    params = {
+        "pickup_datetime": pickup_datetime,
+        "pickup_longitude": pickup_longitude,
+        "pickup_latitude": pickup_latitude,
+        "dropoff_longitude": dropoff_longitude,
+        "dropoff_latitude": dropoff_latitude,
+        "passenger_count": passenger_count
+    }
 
-2. Let's build a dictionary containing the parameters for our API...
+    # Call the API
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            prediction = response.json()
+            fare = prediction.get("fare", "No fare found")
+            st.success(f"💰 Predicted fare: **${fare:.2f}**")
+        else:
+            st.error(f"API returned status code {response.status_code}")
+            st.text(response.text)
+    except Exception as e:
+        st.error(f"Error calling API: {e}")
 
-3. Let's call our API using the `requests` package...
-
-4. Let's retrieve the prediction from the **JSON** returned by the API...
-
-## Finally, we can display the prediction to the user
-'''
+st.divider()
